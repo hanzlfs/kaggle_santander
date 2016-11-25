@@ -1,0 +1,9 @@
+*.csv
+*.pyc
+*.pyo
+input/*.csv
+input/*.zip
+output/*.csv
+valid/*.pyc
+kaggle_kernels/*.pyc
+
