@@ -37,6 +37,23 @@ def apk(actual, predicted, k=7):
 
 def mapAtK(actual, predicted, m, k = 7):
 	"""
-	predicted: list of predicted items string, like ['ind_cco_fin_ult1', 'ind_ctju_fin_ult1', 'ind_ctpp_fin_ult1', 'ind_cder_fin_ult1', 'ind_ctma_fin_ult1', 'ind_cno_fin_ult1', 'ind_ctop_fin_ult1']
-	actual : []
+	predicted: list[list[strings]], list of predicted items string, like ['ind_cco_fin_ult1', 'ind_ctju_fin_ult1', 'ind_ctpp_fin_ult1', 'ind_cder_fin_ult1', 'ind_ctma_fin_ult1', 'ind_cno_fin_ult1', 'ind_ctop_fin_ult1']
+	actual : list[list[strings]]
+	m: int number of instances
 	"""
+	mapk = 0.0
+	for i in range(m):
+		pred = predicted[i]
+		act = actual[i]
+		score = apk(act, pred)
+        mapk += score
+
+    if m > 0:
+        mapk /= m
+    return mapk
+
+
+
+
+
+
