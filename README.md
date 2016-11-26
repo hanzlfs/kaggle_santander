@@ -18,4 +18,8 @@
 		```
 		- *Optional converters/txt2csv.py lines 14&17
 		
+- **2. Test use the sample feture data**
+	- tr_sample_feature.csv, "label" -> label, all other fields are features
+	- val_sample_feature.csv, "lb_*" -> labels, all other fields are features
+		
 #### FFM
