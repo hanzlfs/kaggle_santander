@@ -25,8 +25,14 @@
 #### FFM
 - 1. Recommender Systems: Advances in Collaborative Filtering  http://www.slideshare.net/ChangsungMoon/recommender-systems-advances-in-collaborative-filtering
 - 2. Factorization Machines in Python https://github.com/coreylynch/pyFM
+- 3. Factorization Machines: A New Way of Looking at Machine Learning(must read) https://securityintelligence.com/factorization-machines-a-new-way-of-looking-at-machine-learning/
 
 #### sparse learning
 
 - 1.  Probabilistic Multi-Label Classification with Sparse Feature Learning https://pdfs.semanticscholar.org/2784/78d79d97a0c52b1ad05d1d850733d6fff7c4.pdf
 - 2.  Advances in Collaborative Filtering  https://datajobs.com/data-science-repo/Collaborative-Filtering-[Koren-and-Bell].pdf
+
+#### Vowpal Wabbit (multiclassification possible)
+- Vowpal Wabbit is a fast machine learning library for online learning
+- Resource: http://hunch.net/~vw/ https://github.com/JohnLangford/vowpal_wabbit https://medium.com/@chris_bour/what-i-learned-from-the-kaggle-criteo-data-science-odyssey-b7d1ba980e6#.mpl9u6fdh
+
