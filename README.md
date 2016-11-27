@@ -26,4 +26,5 @@
 
 #### sparse learning
 
-- 1.  https://pdfs.semanticscholar.org/2784/78d79d97a0c52b1ad05d1d850733d6fff7c4.pdf
+- 1.  Probabilistic Multi-Label Classification with Sparse Feature Learning https://pdfs.semanticscholar.org/2784/78d79d97a0c52b1ad05d1d850733d6fff7c4.pdf
+- 2.  Advances in Collaborative Filtering  https://datajobs.com/data-science-repo/Collaborative-Filtering-[Koren-and-Bell].pdf
