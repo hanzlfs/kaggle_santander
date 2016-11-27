@@ -34,5 +34,4 @@
 
 #### Vowpal Wabbit (multiclassification possible)
 - Vowpal Wabbit is a fast machine learning library for online learning
-- Resource: (1) http://hunch.net/~vw/ (2) https://github.com/JohnLangford/vowpal_wabbit (3) https://medium.com/@chris_bour/what-i-learned-from-the-kaggle-criteo-data-science-odyssey-b7d1ba980e6#.mpl9u6fdh
-
+- Resource: (1) http://hunch.net/~vw/ (2) https://github.com/JohnLangford/vowpal_wabbit (3) https://medium.com/@chris_bour/what-i-learned-from-the-kaggle-criteo-data-science-odyssey-b7d1ba980e6#.mpl9u6fdh (4) http://mlwave.com/predicting-click-through-rates-with-online-machine-learning/
