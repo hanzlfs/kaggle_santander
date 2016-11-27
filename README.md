@@ -23,3 +23,7 @@
 	- val_sample_feature.csv, "lb_*" -> labels, all other fields are features
 		
 #### FFM
+
+#### sparse learning
+
+- 1.  https://pdfs.semanticscholar.org/2784/78d79d97a0c52b1ad05d1d850733d6fff7c4.pdf
