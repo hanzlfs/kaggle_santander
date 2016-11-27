@@ -1,6 +1,7 @@
 *.csv
 *.pyc
 *.pyo
+.ipynb_checkpoints
 input/*.csv
 input/*.zip
 output/*.csv
