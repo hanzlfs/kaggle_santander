@@ -2,7 +2,7 @@ from sklearn.linear_model import LogisticRegression
 import numpy as np
 
 def logreg(X_train, y_train):
-	clf = linear_model.LogisticRegression(penalty='l1', C=0.1)
+	clf = LogisticRegression(penalty='l1', C=0.1)
 	clf.fit(X_train, y_train)
 	print clf.classes_
 	return clf
