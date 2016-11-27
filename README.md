@@ -23,6 +23,8 @@
 	- val_sample_feature.csv, "lb_*" -> labels, all other fields are features
 		
 #### FFM
+- 1. Recommender Systems: Advances in Collaborative Filtering  http://www.slideshare.net/ChangsungMoon/recommender-systems-advances-in-collaborative-filtering
+- 2. Factorization Machines in Python https://github.com/coreylynch/pyFM
 
 #### sparse learning
 
