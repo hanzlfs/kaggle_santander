@@ -1,9 +1,5 @@
 # -*- coding: utf-8 -*-
 """
-Created on Thu Nov 24 07:04:17 2016
-
-@author: ironbar
-
 Definition of the class dataset for handling the Santander competition dataset
 """
 
@@ -13,6 +9,7 @@ import pandas as pd
 import time
 from sklearn import preprocessing
 from ast import literal_eval
+from feature_trans import LightGBMTrans
 
 
 class SantanderDataset(object):
@@ -191,7 +188,18 @@ class SantanderDataset(object):
         self.product_columns = product_columns
         self.categorical_columns = categorical_columns
         self.translation_dict = translation_dict
+    
+    def __get_gbm_encoded_data(self, df, input_columns):
+        """
+        Private method that uses gbm encoder for
+        transforming the required data
 
+        df: pandas dataframe
+        input_columns: list with the names of the columns to use
+        """
+        
+        
+        
 
     def __get_encoded_data(self, df, input_columns):
         """
@@ -311,5 +319,5 @@ class SantanderDataset(object):
         else:
             previous_products = df_previous[self.product_columns].values
 
-        return input_data, output_data, previous_products
+        return df_current, input_data, output_data, previous_products
 

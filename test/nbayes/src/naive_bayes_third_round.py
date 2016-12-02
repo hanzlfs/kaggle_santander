@@ -1,14 +1,3 @@
-#cell 0
-# Naive Bayes Third Round
-
-#cell 1
-## I'm going to use the new splitted dataset to train a naive bayes model. I will be using a class for the dataset, and this will help me for later using a unified class for the model. 
-
-#cell 2
-## Load the dataset
-
-#cell 3
-#Imports
 import numpy as np
 from sklearn.naive_bayes import BernoulliNB
 import time
@@ -20,17 +9,9 @@ from dataset import SantanderDataset
 from average_precision import mapk
 from genetic_search import genetic_search
 
-#cell 4
 dataset_root = '../'
 dataset = SantanderDataset(dataset_root)
 
-#cell 5
-## I have been testing the class and seems to be working fine. When loaded the dataset is using only 500MB of RAM.
-
-#cell 6
-## Testing with Naive Bayes
-
-#cell 7
 def train_bnb_model(msg):
     """
     Trains a model using the given parameters
@@ -54,7 +35,6 @@ def train_bnb_model(msg):
     bnb.partial_fit(input_data, output_data, classes = range(24))
     return bnb
 
-#cell 8
 def create_prediction(bnb, msg):
     """
     Makes a prediction using the given model and parameters
@@ -80,7 +60,6 @@ def create_prediction(bnb, msg):
     predictions = predictions[:,::-1][:,0:7]
     return predictions, output_data
 
-#cell 9
 def naive_bayes_workflow(msg):
     """
     Implements all the steps of training and evaluating a naive bayes classifier
@@ -112,11 +91,6 @@ def naive_bayes_workflow(msg):
     return scores, bnb
 
 
-#cell 17
-## I'm going to launch a new search to see if I can get the same results or better.
-
-#cell 19
-#Define evaluation function
 def eval_function_1(individual):
     """
     Tries to optimize just the training score
@@ -124,8 +98,6 @@ def eval_function_1(individual):
     ret = get_genomic_score([5,16],'genetic_search_6',individual,verbose=False)
     return ret[0:1]
 
-#cell 24
-#Define evaluation function
 def eval_function_2(individual):
     """
     Tries to optimize just the training score
@@ -133,8 +105,6 @@ def eval_function_2(individual):
     ret = get_genomic_score([5,16],'genetic_search_8',individual,verbose=False)
     return [np.sum(ret)/2]
 
-#cell 28
-#Define evaluation function
 def eval_function_3(individual):
     """
     Tries to optimize just the training score
@@ -142,8 +112,6 @@ def eval_function_3(individual):
     ret = get_genomic_score([5,16],'genetic_search_9',individual,verbose=False)
     return ret[0:1]
 
-
-#cell 31
 def get_genomic_score(test_month, filename, genome, verbose=False):
     """
     Receives only test month and the genome
@@ -205,8 +173,6 @@ def get_genomic_score(test_month, filename, genome, verbose=False):
         
     return ret[0]
 
-#cell 32
-#Define evaluation function
 def eval_function_4(individual):
     """
     Tries to optimize just the training score
@@ -215,13 +181,6 @@ def eval_function_4(individual):
     return [np.sum(ret)/2]
 
 
-#cell 35
-## Submission
-
-#cell 36
-## I have to create a submission function, I will reuse the one from the previous notebook.
-
-#cell 37
 def create_submission(filename, msg, 
                         verbose=False):
     """
