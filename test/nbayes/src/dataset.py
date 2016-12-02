@@ -9,8 +9,7 @@ import pandas as pd
 import time
 from sklearn import preprocessing
 from ast import literal_eval
-from feature_trans import LightGBMTrans
-
+import lightgbm as lgb
 
 class SantanderDataset(object):
     """
@@ -189,7 +188,8 @@ class SantanderDataset(object):
         self.categorical_columns = categorical_columns
         self.translation_dict = translation_dict
     
-    def __get_gbm_encoded_data(self, df, input_columns):
+    def __gbm_encoded_data(self, X, y = None, params = None, config = "train", 
+                           path = "../gbm_model/model.txt"):
         """
         Private method that uses gbm encoder for
         transforming the required data
@@ -197,11 +197,27 @@ class SantanderDataset(object):
         df: pandas dataframe
         input_columns: list with the names of the columns to use
         """
+        self._gbm_params =  {"num_iteration": 10, 
+                             "n_estimators" : 30, 
+                             "max_depth" : 6, 
+                             "eval_metrics":"multi_logloss"}
         
-        
-        
+        if config == "train":
+            if params = None: 
+                params = self._gbm_params
+            lgb_model = lgb.LGBMClassifier(n_estimators=params["n_estimators"], max_depth = params["max_depth"])
+            lgb_model.fit(X, y, eval_metric=param["eval_metrics"], 
+                                verbose = False)
+            lgb_model.booster().save_model(path)
+            features = lgb_model.apply(X, num_iteration= params["num_iteration"])
+            return features
+            
+        if config == "eval" :
+            booster = lgb.Booster(model_file=path)
+            features = booster.predict(X, pred_leaf=True, num_iteration=10)
+            return features
 
-    def __get_encoded_data(self, df, input_columns):
+    def __get_encoded_data(self, df, input_columns, option = "default"):
         """
         Private method that uses one hot encoder for
         transforming the required data
