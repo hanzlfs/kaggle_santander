@@ -3,13 +3,13 @@
 Definition of the class dataset for handling the Santander competition dataset
 """
 
-
 import numpy as np
 import pandas as pd
 import time
 from sklearn import preprocessing
 from ast import literal_eval
-import lightgbm as lgb
+from common import *
+#import lightgbm as lgb
 
 class SantanderDataset(object):
     """
@@ -17,109 +17,59 @@ class SantanderDataset(object):
     It will give the data as it is requested
     """
 
-    def __init__(self, dataset_root):
+    def __init__(self, dataset_root, isLag = False):
         """
         Loads the dataset
         """
         self.dataset_root = dataset_root
-        self.__load_datasets(dataset_root)
+        self.__load_datasets(dataset_root, isLag)
         self.__prepare_datasets()
         #self.transform_dataset_for_training(self.df)
 
-
-    def __load_datasets(self, dataset_root):
+    def __load_datasets(self, dataset_root, isLag):
         """
         Loads all the datasets
-        """
-        dictionary_types = {
-                            "sexo":'category',
-                            "ult_fec_cli_1t":str,
-                            "indresi":'category',
-                            "indext":'category',
-                            "indrel":'category',
-                            "indfall":'category',
-                            "nomprov":'category',
-                            "segmento":'category',
-                            "ind_empleado":'category',
-                            "pais_residencia":'category',
-                            "antiguedad":np.int16,
-                            "ind_nuevo":'category',
-                            'indrel_1mes':'category',
-                            'tiprel_1mes':'category',
-                            'canal_entrada':'category',
-                            "age":np.int8,
-                            "ind_actividad_cliente":'category',
-                            "ind_ahor_fin_ult1":np.int8,
-                            "ind_aval_fin_ult1":np.int8,
-                            "ind_cco_fin_ult1":np.int8,
-                            "ind_cder_fin_ult1":np.int8,
-                            "ind_cno_fin_ult1":np.int8,
-                            "ind_ctju_fin_ult1":np.int8,
-                            "ind_ctma_fin_ult1":np.int8,
-                            "ind_ctop_fin_ult1":np.int8,
-                            "ind_ctpp_fin_ult1":np.int8,
-                            "ind_deco_fin_ult1":np.int8,
-                            "ind_deme_fin_ult1":np.int8,
-                            "ind_dela_fin_ult1":np.int8,
-                            "ind_ecue_fin_ult1":np.int8,
-                            "ind_fond_fin_ult1":np.int8,
-                            "ind_hip_fin_ult1":np.int8,
-                            "ind_plan_fin_ult1":np.int8,
-                            "ind_pres_fin_ult1":np.int8,
-                            "ind_reca_fin_ult1":np.int8,
-                            "ind_tjcr_fin_ult1":np.int8,
-                            "ind_valo_fin_ult1":np.int8,
-                            "ind_viv_fin_ult1":np.int8,
-                            "ind_nomina_ult1":np.int8,
-                            "ind_nom_pens_ult1":np.int8,
-                            "ind_recibo_ult1":np.int8,
-
-                            "ind_ahor_fin_ult1_change":'category',
-                            "ind_aval_fin_ult1_change":'category',
-                            "ind_cco_fin_ult1_change":'category',
-                            "ind_cder_fin_ult1_change":'category',
-                            "ind_cno_fin_ult1_change":'category',
-                            "ind_ctju_fin_ult1_change":'category',
-                            "ind_ctma_fin_ult1_change":'category',
-                            "ind_ctop_fin_ult1_change":'category',
-                            "ind_ctpp_fin_ult1_change":'category',
-                            "ind_deco_fin_ult1_change":'category',
-                            "ind_deme_fin_ult1_change":'category',
-                            "ind_dela_fin_ult1_change":'category',
-                            "ind_ecue_fin_ult1_change":'category',
-                            "ind_fond_fin_ult1_change":'category',
-                            "ind_hip_fin_ult1_change":'category',
-                            "ind_plan_fin_ult1_change":'category',
-                            "ind_pres_fin_ult1_change":'category',
-                            "ind_reca_fin_ult1_change":'category',
-                            "ind_tjcr_fin_ult1_change":'category',
-                            "ind_valo_fin_ult1_change":'category',
-                            "ind_viv_fin_ult1_change":'category',
-                            "ind_nomina_ult1_change":'category',
-                            "ind_nom_pens_ult1_change":'category',
-                            "ind_recibo_ult1_change":'category',
-                            'product_buy':np.int8,
-        }
+        """        
         limit_rows   = 20000000
+        if isLag:
+            dic_used = get_dict_type_w_lag()
+            path_tr = "input/train_current_month_dataset_w_lag5_clean.csv"
+            path_val = "input/eval_current_month_dataset_w_lag5_clean.csv"
+        else:
+            dic_used = dictionary_types
+            path_tr = "input/train_current_month_dataset.csv"
+            path_val = "input/eval_current_month_dataset.csv"
+
+        """
+        Read train current and val current w. lags
+        """
         start_time = time.time()
-        self.eval_current = pd.read_csv(dataset_root + "input/eval_current_month_dataset.csv.gz",
-                                   dtype=dictionary_types,
+        self.train_current = pd.read_csv(dataset_root + path_tr,
+                                   dtype=dic_used,
                                    nrows=limit_rows)
         print('It took %i seconds to load the dataset' % (time.time()-start_time))
+
+        start_time = time.time()
+        self.eval_current = pd.read_csv(dataset_root + path_val,
+                                   dtype=dic_used,
+                                   nrows=limit_rows)
+        print('It took %i seconds to load the dataset' % (time.time()-start_time))
+
+        """
+        Read train and eval previous
+        """
         start_time = time.time()
         self.eval_previous = pd.read_csv(dataset_root + "input/eval_previous_month_dataset.csv.gz",
                                    dtype=dictionary_types,
                                    nrows=limit_rows)
         print('It took %i seconds to load the dataset' % (time.time()-start_time))
-        self.train_current = pd.read_csv(dataset_root + "input/train_current_month_dataset.csv.gz",
-                                   dtype=dictionary_types,
-                                   nrows=limit_rows)
-        print('It took %i seconds to load the dataset' % (time.time()-start_time))
+       
         start_time = time.time()
         self.train_previous = pd.read_csv(dataset_root + "input/train_previous_month_dataset.csv.gz",
                                    dtype=dictionary_types,
                                    nrows=limit_rows)
         print('It took %i seconds to load the dataset' % (time.time()-start_time))
+
         print(len(self.eval_current), len(self.eval_previous))
         print(len(self.train_current), len(self.train_previous))
         return
@@ -183,13 +133,13 @@ class SantanderDataset(object):
         df = self.eval_current
         df.new_products = df.new_products.apply(literal_eval)
         #Save some data for later
-        self.change_columns = change_columns
-        self.product_columns = product_columns
-        self.categorical_columns = categorical_columns
-        self.translation_dict = translation_dict
-    
+        self.change_columns = change_columns # does not include lag
+        self.product_columns = product_columns # does not include lag
+        self.categorical_columns = categorical_columns # includes lag
+        self.translation_dict = translation_dict # include change_columns and categorical_columns
+
     def __gbm_encoded_data(self, X, y = None, params = None, config = "train", 
-                           path = "../gbm_model/model.txt"):
+                           path = "../gbm_model/model.txt", onehot = True):
         """
         Private method that uses gbm encoder for
         transforming the required data
@@ -197,24 +147,37 @@ class SantanderDataset(object):
         df: pandas dataframe
         input_columns: list with the names of the columns to use
         """
-        self._gbm_params =  {"num_iteration": 10, 
+        self._gbm_params =  {"num_iteration": 8, 
                              "n_estimators" : 30, 
-                             "max_depth" : 6, 
+                             "max_depth" : 5, 
                              "eval_metrics":"multi_logloss"}
         
         if config == "train":
-            if params = None: 
+            if params is None: 
                 params = self._gbm_params
             lgb_model = lgb.LGBMClassifier(n_estimators=params["n_estimators"], max_depth = params["max_depth"])
-            lgb_model.fit(X, y, eval_metric=param["eval_metrics"], 
+            lgb_model.fit(X, y, eval_metric=params["eval_metrics"], 
                                 verbose = False)
             lgb_model.booster().save_model(path)
             features = lgb_model.apply(X, num_iteration= params["num_iteration"])
-            return features
+            #return features
             
         if config == "eval" :
             booster = lgb.Booster(model_file=path)
-            features = booster.predict(X, pred_leaf=True, num_iteration=10)
+            print "X shape", X.shape
+            features = booster.predict(X, pred_leaf=True, num_iteration=8)
+            #return features
+
+        if onehot:
+            print "max val in features is ", np.max(features)
+            #n_values = 2 ** self._gbm_params['max_depth'] 
+            n_values = np.max(features) + 1
+            enc = preprocessing.OneHotEncoder(n_values=n_values,\
+                                          sparse=False, dtype=np.uint8)
+            enc.fit(features)
+            encoded_features = enc.transform(features)
+            return encoded_features
+        else:
             return features
 
     def __get_encoded_data(self, df, input_columns, option = "default"):
@@ -237,6 +200,37 @@ class SantanderDataset(object):
         encoded_data = enc.transform(df[input_columns].values)
         return encoded_data
 
+    def __get_interact_data(self, df, interact_columns):
+        """
+        Private method that includes all interactions to expand feature space
+    
+        df: pandas dataframe
+        interact_columns: list[list]: groups of features that have local interaction
+
+        Note: this method must come BEFORE one-hot encoding
+        """
+        feat_interact_names = [] # the names of all interact feature groups
+        n_values = []
+        for feat_group in interact_columns:
+            feat_group_name = '-'.join(feat_group) # the interaction feature name 
+            feat_interact_names.append(feat_group_name)
+            n_values.append(np.prod([len(self.translation_dict[key].values())\
+                                for key in feat_group]))
+            # concatenate feature into 'A-B-C'
+            df[feat_group_name] = \
+                df.apply(lambda row: '-'.join([str(int(row[x])) if isInt(row[x]) else \
+                            str(row[x]) for x in feat_group ]), axis = 1)
+            df[feat_group_name] = pd.factorize(df[feat_group_name])[0]
+
+        # one-hot encoding 
+
+        enc = preprocessing.OneHotEncoder(n_values=n_values,\
+                                            sparse=False, dtype=np.uint8)
+        enc.fit(df[feat_interact_names].values)        
+        interact_data = enc.transform(df[feat_interact_names].values)
+
+        return interact_data
+
     def __get_data_aux(self, msg):
         """
         Auxiliary method for get_data
@@ -253,6 +247,7 @@ class SantanderDataset(object):
                 if data[i] is None:
                     data[i] = ret[i]
                 else:
+                    print "data[i], ", data[i].shape, " ret[i], ", ret[i].shape
                     data[i] = np.concatenate((data[i], ret[i]), axis=0)
         return data
 
@@ -321,19 +316,55 @@ class SantanderDataset(object):
                     print(input_data.shape, change_data.shape)
                 input_data = np.concatenate((input_data, change_data),
                                             axis=1)
+        #Add interaction data if necessary
+        if msg['input_columns_interactions']:
+            interact_data = self.__get_interact_data(df_current, msg['input_columns_interactions'])
+
+            if input_data is None:
+                input_data = interact_data
+            else:
+                if verbose:
+                    print(input_data.shape, interact_data.shape)
+                input_data = np.concatenate((input_data, interact_data),
+                                            axis=1)
+
+        # add lagged product features if necessary
+        if msg['use_product_lags']:
+            product_columns_lag = get_feat_prod_lag(msg['use_product_lags'])
+            product_data_lag = df_current[product_columns_lag].values       
+            if input_data is None:
+                input_data = product_data_lag
+            else:
+                #Join the matrixes
+                if verbose:
+                    print(input_data.shape, product_data_lag.shape)
+                input_data = np.concatenate((input_data, product_data_lag),
+                                            axis=1)
+
+        # add lagged profile features if necessary
+        if msg['use_profile_lags']:
+            profile_columns_lag = get_feat_lag(msg['input_columns_lags'], msg['use_profile_lags'])
+            profile_data_lag = self.__get_encoded_data(df_current,\
+                                                        profile_columns_lag)
+            if input_data is None:
+                input_data = profile_data_lag
+            else:
+                if verbose:
+                    print(input_data.shape, profile_data_lag.shape)
+                input_data = np.concatenate((input_data, profile_data_lag),
+                                            axis=1)
 
         #Now collect the output data
         if msg['train']:
             output_data = df_current.buy_class.values
         else:
             output_data = df_current.new_products.values
-
-        #Collect previous products data
-
+        
+        #Collect previous products data        
         if msg['train']:
             previous_products = None
         else:
             previous_products = df_previous[self.product_columns].values
 
-        return df_current, input_data, output_data, previous_products
+        return input_data, output_data, previous_products
 
