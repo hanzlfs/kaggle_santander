@@ -1,14 +1,3 @@
-#cell 0
-# Naive Bayes Third Round
-
-#cell 1
-## I'm going to use the new splitted dataset to train a naive bayes model. I will be using a class for the dataset, and this will help me for later using a unified class for the model. 
-
-#cell 2
-## Load the dataset
-
-#cell 3
-#Imports
 import numpy as np
 from sklearn.naive_bayes import BernoulliNB
 import time
@@ -25,18 +14,9 @@ import lightgbm as lgb
 from sklearn import datasets, metrics, model_selection
 from common import *
 
-
-#cell 4
 dataset_root = '../'
 dataset = SantanderDataset(dataset_root, isLag = True)
 
-#cell 5
-## I have been testing the class and seems to be working fine. When loaded the dataset is using only 500MB of RAM.
-
-#cell 6
-## Testing with Naive Bayes
-
-#cell 7
 def train_lgbm_model(msg):
     """
     Trains a model using the given parameters
@@ -158,11 +138,11 @@ def create_submission(filename, msg,
     #Train the model and get validation scores
     ret = prediction_workflow(msg)
     scores = ret[0]
-    bnb = ret[1]
+    clf = ret[1]
     unq_lb = ret[2]
     #Create a prediction
     msg['month'] = test_month
-    predictions, output_data = create_prediction(bnb, msg, unq_lb)
+    predictions, output_data = create_prediction(clf, msg, unq_lb)
     #Create the submission text
     if verbose:
         print('Creating text...')
