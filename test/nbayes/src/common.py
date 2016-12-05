@@ -2,7 +2,7 @@
 Definition of constants and common utilities
 """
 import numpy as np
-
+import itertools
 """
 max number of lags
 """
@@ -20,6 +20,57 @@ feat_prod = ['ind_ahor_fin_ult1', 'ind_aval_fin_ult1', 'ind_cco_fin_ult1', 'ind_
                        'ind_valo_fin_ult1', 'ind_viv_fin_ult1', 'ind_nomina_ult1', 'ind_nom_pens_ult1', 'ind_recibo_ult1']
 feat_prod_change = []
 feat_prod_lag = []
+
+def create_interaction_list(profile_feature, is_prod_feature = False, profile_lag = [0], prod_lag = [1], \
+                                   interact_order = 2, interact_option = 'individual'):
+       """
+       create interaction groups given experiment conditions
+       
+       profile_feature: list of profile features in interaction
+       is_prod_feature: whether or not to include 24 product features 
+       profile_lag: list of profile lags in interaction, default [0]
+       prod_lag: default [1], note that for lag 1 product feature is from train_prev and eval_prev
+       interact_order: default 2, the order to pair features 
+       interact_option: default 'individual', i.e. profile and prod features interact with themselves only
+                            if 'mutual', get profile-prod pairwise interactions, in this case interact_order = 2
+                            if 'All', merge profile and prod features and form interactions with order
+       return [[group1],[group2] ... ]
+       """
+       if (not profile_feature) and (not is_prod_feature):
+              return []
+       result = [] 
+
+       profile_lag = [x for x in profile_lag if x > 0] # the real lags
+       prod_lag = [x for x in prod_lag if x > 1] # the real lags
+
+       prod_feature = feat_prod
+       if interact_option == 'all':
+              feature_list = []
+              if profile_feature:
+                     feature_list.extend(profile_feature)
+                     if profile_lag:
+                            feature_list.extend([str(x) + '_L' + str(lag) for x in profile_feature for lag in profile_lag])
+              if is_prod_feature:
+                     feature_list.extend(prod_feature)
+                     if prod_lag:
+                            feature_list.extend([str(x) + '_L' + str(lag) for x in prod_feature for lag in prod_lag])
+              result.extend(list(itertools.combinations(feature_list, interact_order)))
+
+       if interact_option == 'individual':              
+              if profile_feature:
+                     feature_list = []
+                     feature_list.extend(profile_feature)
+                     if profile_lag:
+                            feature_list.extend([str(x) + '_L' + str(lag) for x in profile_feature for lag in profile_lag])
+                     result.extend(list(itertools.combinations(feature_list, interact_order)))
+              if is_prod_feature:
+                     feature_list = []
+                     feature_list.extend(prod_feature)
+                     if prod_lag:
+                            feature_list.extend([str(x) + '_L' + str(lag) for x in prod_feature for lag in prod_lag])
+                     result.extend(list(itertools.combinations(profile_feature, interact_order)))
+       
+       return map(list, result)
 
 def get_feat_prod_lag(lags):
 	# get lag product features with selected lags 

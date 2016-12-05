@@ -56,7 +56,7 @@ def train_bnb_model(msg):
     #Fit the model
     #bnb = LogisticRegression()
     bnb = lgb.LGBMClassifier(n_estimators=100)
-    print "data size, ", input_data.shape, " target size, ", output_data.shape
+    print "training data size, ", input_data.shape, " training target size, ", output_data.shape
     #print "Column_6 unique vals: ", len(np.unique(input_data[:,6]))
     #print "Column_9 unique vals: ", len(np.unique(input_data[:,9]))
     #print "Column_20 unique vals: ", len(np.unique(input_data[:,20]))
@@ -86,8 +86,12 @@ def create_prediction(bnb, msg):
     #Get the data for making a prediction
     ret = dataset.get_data(msg_copy)
     input_data, output_data, previous_products = ret
+    print "predicting data size, ", input_data.shape, " predicting target size, ", output_data.shape
     #Get the prediction
     rank = bnb.predict_proba(input_data)
+    # if some labels are missing, fill zeros in rank so that the shape matchs nsamp * 24
+
+
     filtered_rank = np.equal(previous_products, 0) * rank
     predictions = np.argsort(filtered_rank, axis=1)
     predictions = predictions[:,::-1][:,0:7]
@@ -276,27 +280,44 @@ def create_submission(filename, msg,
         f.write(text)
     return scores
 
+def get_msg():
+    """
+    user specified 
+    define input features, months, interactions and conditions here
+    """
 
-#cell 45
-#Create submission
-start_time = time.time()
-msg = {'train_month': [1,2,5,6,10,11,16],
-       'eval_month': [5, 16],
-      'input_columns': ['pais_residencia','age','indrel','indrel_1mes','indext','segmento','month'], # the input columns not lag
-      'use_product': True,
-      'use_change': True,
-      'use_product_lags': [2,3,4,5],
-      'use_profile_lags': [1,2,3,4,5],
-      'input_columns_lags': ['indrel', 'indext', 'indrel_1mes', 'segmento'],
-      'input_columns_interactions': [['indrel','indext','indrel_1mes','segmento']],
-      'use_gbdt_feature': False}
-print(create_submission('lgbm_w_lag_w_interact',msg))
-print(time.time()-start_time)
+    #####0. define base ########
+    msg = {
+    'train_month': [1,2,5,6,10,11,16],
+    'eval_month': [5, 16],
+    'input_columns': ['renta', 'pais_residencia','age','indrel','indrel_1mes','indext','segmento','month'], # the input columns not lag
+    'use_product': True,
+    'use_change': True,
+    'use_product_lags': [2,3,4,5],
+    'use_profile_lags': [1,2,3,4,5],
+    'input_columns_lags': ['indrel', 'indext', 'indrel_1mes', 'segmento'], # profile features for which we include in lags as well
+    'input_columns_interactions': [], # groups of interactions we include in training
+    'use_product_change_lags': [], # lags for which we use product change features
+    'use_profile_change_lags': [], # lags for which we use profile change features
+    'input_columns_change': [], # profile features for which we collect change info
+    'use_gbdt_feature': False}
 
-#cell 46
-## I get a LB score of , 87 in the classification( top 9%)  
-## That's very good for Naive Bayes
+    ######1. define interactions ########
+    profile_feature = ['renta', 'age', 'indrel','indrel_1mes','indext', 'segmento']
+    is_prod_feature = True
+    profile_lag = [0]
+    prod_lag = [1]
+    interact_order = 2
+    interact_option = 'individual'
+    msg['input_columns_interactions'] = create_interaction_list(profile_feature = profile_feature, \
+                                            is_prod_feature = is_prod_feature, \
+                                            profile_lag = profile_lag, prod_lag = prod_lag, \
+                                            interact_order = interact_order, interact_option = interact_option)
 
-#cell 47
-
+if __name__ == "__main__":
+    submission_file_name = 'lgbm_1204_02'
+    msg = get_msg()
+    start_time = time.time()
+    print(create_submission(submission_file_name,msg))
+    print(time.time()-start_time)
 

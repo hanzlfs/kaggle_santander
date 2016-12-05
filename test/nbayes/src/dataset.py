@@ -138,6 +138,7 @@ class SantanderDataset(object):
         self.categorical_columns = categorical_columns # includes lag
         self.translation_dict = translation_dict # include change_columns and categorical_columns
 
+
     def __gbm_encoded_data(self, X, y = None, params = None, config = "train", 
                            path = "../gbm_model/model.txt", onehot = True):
         """
@@ -230,6 +231,70 @@ class SantanderDataset(object):
         interact_data = enc.transform(df[feat_interact_names].values)
 
         return interact_data
+
+
+    def __get_feature_status_change_data(self, df, feature_columns, lags):
+        """
+        Private method that generate status change data for non-product user profile features
+        
+        df: pandas dataframe
+        feature_columns: the selected profile feature to be used that we should consider status change
+        if lag == 0, then stand on current month feature
+
+        Note: this function must be applied after digitalized categorical features and before one-hot encoding
+        """
+        feat_names = [col + '_change_L' + str(lag) for col in feature_columns for lag in lags]
+        for col in feature_columns:
+            for lag in lags:
+                # determine current and previous columns
+                if lag == 0:
+                    col_current = col
+                else:
+                    col_current = col + '_L' + str(lag)
+
+                # comparison
+                if lag < max_lag:
+                    col_prev = col + '_L' + str(lag + 1)
+                    df[col + '_change_L' + str(lag)] = df.apply(lambda row: int(int(row[col_current]) == int(row[col_prev])),\
+                                                            axis = 1)                
+                else:
+                    df[col + '_change_L' + str(lag)] = 0
+        
+        status_change_data = df[feat_names].values
+        return status_change_data
+
+    def __get_product_status_change_data(self, df, lags):
+        """
+        Private method that includes product feature status change comparing cur vs. prev month
+
+        df: pandas dataframe    
+        lags: a list of lags that we use to compute status change
+
+        prod_change 1/0, prod_add 1/0 prod_drop 1/0 prod_maintain 1/0
+        """
+
+        # find out previous column names
+        feat_names = [col + x + str(lag) for col in self.product_columns \
+                        for x in ['_change_L','_add_L','_drop_L'] for lag in lags]
+        for col in self.product_columns:
+            for lag in lags:
+                if lag == 0:
+                    continue # we assume have no information on current month products
+                if lag < max_lag:
+                    col_current = col + '_L' + str(lag) 
+                    col_prev = col + '_L' + str(lag + 1)
+
+                    df[col + '_change_L' + str(lag)] = df.apply(lambda row: int(int(row[col_current]) == int(row[col_prev])), axis = 1)
+                    df[col + '_add_L' + str(lag)] = df.apply(lambda row: int(int(row[col_current]) == int(row[col_prev]) + 1), axis = 1)
+                    df[col + '_drop_L' + str(lag)] = df.apply(lambda row: int(int(row[col_current]) + 1 == int(row[col_prev])), axis = 1)
+                else:
+                    df[col + '_change_L' + str(lag)] = 0
+                    df[col + '_add_L' + str(lag)] = 0
+                    df[col + '_drop_L' + str(lag)] = 0
+
+        status_change_data = df[feat_names].values
+        return status_change_data
+
 
     def __get_data_aux(self, msg):
         """
@@ -354,6 +419,29 @@ class SantanderDataset(object):
                 input_data = np.concatenate((input_data, profile_data_lag),
                                             axis=1)
 
+        # add status change for customer profile features
+        if msg['input_columns_change']:
+            print "adding profile status change features................"
+            profile_data_change_lag = self.__get_feature_status_change_data(df_current, \
+                                            msg['input_columns_change'], msg['use_profile_change_lags'])
+            if input_data is None:
+                input_data = profile_data_change_lag
+            else:
+                if verbose:
+                    print(input_data.shape, profile_data_change_lag.shape)
+                input_data = np.concatenate((input_data, profile_data_change_lag), axis = 1)
+
+        # add status change for customer product buyings
+        if msg['use_product_change_lags']:
+            print "adding product status change features................"
+            product_data_change_lag = self.__get_product_status_change_data(df_current, msg['use_product_change_lags'])
+            if input_data is None:
+                input_data = product_data_change_lag
+            else:
+                if verbose:
+                    print(input_data.shape, product_data_change_lag.shape)
+                input_data = np.concatenate((input_data, product_data_change_lag), axis = 1)
+                    
         #Now collect the output data
         if msg['train']:
             output_data = df_current.buy_class.values
