@@ -23,6 +23,8 @@ from genetic_search import genetic_search
 import random
 import lightgbm as lgb
 from sklearn import datasets, metrics, model_selection
+from common import *
+
 
 #cell 4
 dataset_root = '../'
@@ -53,9 +55,10 @@ def train_bnb_model(msg):
     #Get the data for training
     ret = dataset.get_data(msg_copy)
     input_data, output_data = ret[0:2]
+    unq_lb = sorted(np.unique(output_data).tolist())
     #Fit the model
     #bnb = LogisticRegression()
-    bnb = lgb.LGBMClassifier(n_estimators=100)
+    bnb = lgb.LGBMClassifier(n_estimators=100, nthread = 8) # specify nthread = 8 to speed up 
     print "training data size, ", input_data.shape, " training target size, ", output_data.shape
     #print "Column_6 unique vals: ", len(np.unique(input_data[:,6]))
     #print "Column_9 unique vals: ", len(np.unique(input_data[:,9]))
@@ -65,10 +68,10 @@ def train_bnb_model(msg):
     bnb.fit(input_data, output_data, eval_metric="multi_logloss")
     #bnb = BernoulliNB(alpha=1e-2)
     #bnb.partial_fit(input_data, output_data, classes = range(24))
-    return bnb
+    return bnb, unq_lb
 
 #cell 8
-def create_prediction(bnb, msg):
+def create_prediction(bnb, msg, unq_lb):
     """
     Makes a prediction using the given model and parameters
     
@@ -90,9 +93,14 @@ def create_prediction(bnb, msg):
     #Get the prediction
     rank = bnb.predict_proba(input_data)
     # if some labels are missing, fill zeros in rank so that the shape matchs nsamp * 24
-
-
-    filtered_rank = np.equal(previous_products, 0) * rank
+    if rank.shape[1] < 24:
+        print "rank,", rank.shape, "label, ", unq_lb
+        assert rank.shape[1] == len(unq_lb)
+        rank_copy = np.zeros((rank.shape[0], 24))
+        rank_copy[:, unq_lb] = rank.copy()
+        filtered_rank = np.equal(previous_products, 0) * rank_copy
+    else:
+        filtered_rank = np.equal(previous_products, 0) * rank
     predictions = np.argsort(filtered_rank, axis=1)
     predictions = predictions[:,::-1][:,0:7]
     return predictions, output_data
@@ -115,128 +123,20 @@ def naive_bayes_workflow(msg):
     if type(msg['eval_month']) is not list:
         msg['eval_month'] = [msg['eval_month']]
     #Train the model
-    bnb = train_bnb_model(msg)
+    bnb, unq_lb = train_bnb_model(msg)
     scores = []
     for month in msg['eval_month']:
         msg_copy = msg.copy()
         msg_copy['month'] = month
         #Create prediction
-        predictions, output_data = create_prediction(bnb, msg_copy)
+        predictions, output_data = create_prediction(bnb, msg_copy, unq_lb)
         #Get the score
         score = mapk(output_data, predictions)
         scores.append(score)
     
-    return scores, bnb
+    return scores, bnb, unq_lb
 
 
-#cell 17
-## I'm going to launch a new search to see if I can get the same results or better.
-
-#cell 19
-#Define evaluation function
-def eval_function_1(individual):
-    """
-    Tries to optimize just the training score
-    """
-    ret = get_genomic_score([5,16],'genetic_search_6',individual,verbose=False)
-    return ret[0:1]
-
-#cell 24
-#Define evaluation function
-def eval_function_2(individual):
-    """
-    Tries to optimize just the training score
-    """
-    ret = get_genomic_score([5,16],'genetic_search_8',individual,verbose=False)
-    return [np.sum(ret)/2]
-
-#cell 28
-#Define evaluation function
-def eval_function_3(individual):
-    """
-    Tries to optimize just the training score
-    """
-    ret = get_genomic_score([5,16],'genetic_search_9',individual,verbose=False)
-    return ret[0:1]
-
-
-#cell 31
-def get_genomic_score(test_month, filename, genome, verbose=False):
-    """
-    Receives only test month and the genome
-    Returns the score and saves the configuration and results in a file
-    It's the same function as above but without training with month 16
-    
-    If the genome size is 35 then use_product is set to True
-    If the genome size is 36 then all the parameters are in the search
-    len(categorical_columns) = 18
-    So we need a genome of 18+2+1 = 21
-    """
-    if verbose:
-        print(genome)
-    #Decide which train months to use, from 1 to 16
-    if np.sum(genome[0:16]) > 0:
-        used_months = np.array(range(1,17))[np.array(genome[0:16]) == 1]
-        train_month = used_months
-    else:
-        #Select a random month
-        used_months = np.random.randint(1,17,1)[0]
-        train_month = [used_months]
-    if verbose:
-        print('train_month', train_month)
-    #Decide wich category input columns to use
-    categorical_columns = dataset.categorical_columns
-    used_index = np.arange(len(categorical_columns))[
-        np.array(genome[16:34]) == 1]
-    input_columns = [categorical_columns[i] for i in used_index]
-    if verbose:
-        print('input_columns', input_columns)
-    #Decide on using change columns and product as input
-    use_change = genome[34] == 1
-    #This allows to use a shorter genome to fix some properties
-    if len(genome) >= 36: 
-        use_product = genome[35] == 1
-    else:
-        use_product = True
-    #Build message for training 
-    msg ={'train_month':list(train_month),
-          'eval_month':test_month,
-          'input_columns':input_columns,
-          'use_product':use_product,
-          'use_change':use_change,
-        
-    }
-    if verbose:
-        print(msg)
-    ret = naive_bayes_workflow(msg)
-    #Print and save to file 
-    text = '\t'.join([str(a) for a in ret[0]]) + '\t'
-    text += '%s\t%s\t' % ( use_change, use_product)
-    if verbose:
-        print(text)
-    text += "','".join(input_columns)
-    text += "\t" + ",".join([str(a) for a in train_month])
-    text += '\n'
-    with open(dataset_root+'logs/%s.log' % filename, 'a') as f:
-        f.write(text)
-        
-    return ret[0]
-
-#cell 32
-#Define evaluation function
-def eval_function_4(individual):
-    """
-    Tries to optimize just the training score
-    """
-    ret = get_genomic_score([5,16],'genetic_search_10',individual,verbose=False)
-    return [np.sum(ret)/2]
-
-
-#cell 35
-## Submission
-
-#cell 36
-## I have to create a submission function, I will reuse the one from the previous notebook.
 
 #cell 37
 def create_submission(filename, msg, 
@@ -259,9 +159,10 @@ def create_submission(filename, msg,
     ret = naive_bayes_workflow(msg)
     scores = ret[0]
     bnb = ret[1]
+    unq_lb = ret[2]
     #Create a prediction
     msg['month'] = test_month
-    predictions, output_data = create_prediction(bnb, msg)
+    predictions, output_data = create_prediction(bnb, msg, unq_lb)
     #Create the submission text
     if verbose:
         print('Creating text...')
@@ -288,8 +189,10 @@ def get_msg():
 
     #####0. define base ########
     msg = {
-    'train_month': [1,2,5,6,10,11,16],
-    'eval_month': [5, 16],
+    #'train_month': [1,2,5,6,10,11,16],
+    #'eval_month': [5, 16],
+    'train_month': [5],
+    'eval_month': [16],
     'input_columns': ['renta', 'pais_residencia','age','indrel','indrel_1mes','indext','segmento','month'], # the input columns not lag
     'use_product': True,
     'use_change': True,
@@ -313,6 +216,7 @@ def get_msg():
                                             is_prod_feature = is_prod_feature, \
                                             profile_lag = profile_lag, prod_lag = prod_lag, \
                                             interact_order = interact_order, interact_option = interact_option)
+    return msg
 
 if __name__ == "__main__":
     submission_file_name = 'lgbm_1204_02'

@@ -176,6 +176,115 @@ def get_dict_type_w_lag():
 				dictionary_types_w_lag[str(k) + '_L' + str(lag)] = v
 	return dictionary_types_w_lag
 
+#cell 17
+## I'm going to launch a new search to see if I can get the same results or better.
+
+#cell 19
+#Define evaluation function
+def eval_function_1(individual):
+    """
+    Tries to optimize just the training score
+    """
+    ret = get_genomic_score([5,16],'genetic_search_6',individual,verbose=False)
+    return ret[0:1]
+
+#cell 24
+#Define evaluation function
+def eval_function_2(individual):
+    """
+    Tries to optimize just the training score
+    """
+    ret = get_genomic_score([5,16],'genetic_search_8',individual,verbose=False)
+    return [np.sum(ret)/2]
+
+#cell 28
+#Define evaluation function
+def eval_function_3(individual):
+    """
+    Tries to optimize just the training score
+    """
+    ret = get_genomic_score([5,16],'genetic_search_9',individual,verbose=False)
+    return ret[0:1]
+
+
+#cell 31
+def get_genomic_score(test_month, filename, genome, verbose=False):
+    """
+    Receives only test month and the genome
+    Returns the score and saves the configuration and results in a file
+    It's the same function as above but without training with month 16
+    
+    If the genome size is 35 then use_product is set to True
+    If the genome size is 36 then all the parameters are in the search
+    len(categorical_columns) = 18
+    So we need a genome of 18+2+1 = 21
+    """
+    if verbose:
+        print(genome)
+    #Decide which train months to use, from 1 to 16
+    if np.sum(genome[0:16]) > 0:
+        used_months = np.array(range(1,17))[np.array(genome[0:16]) == 1]
+        train_month = used_months
+    else:
+        #Select a random month
+        used_months = np.random.randint(1,17,1)[0]
+        train_month = [used_months]
+    if verbose:
+        print('train_month', train_month)
+    #Decide wich category input columns to use
+    categorical_columns = dataset.categorical_columns
+    used_index = np.arange(len(categorical_columns))[
+        np.array(genome[16:34]) == 1]
+    input_columns = [categorical_columns[i] for i in used_index]
+    if verbose:
+        print('input_columns', input_columns)
+    #Decide on using change columns and product as input
+    use_change = genome[34] == 1
+    #This allows to use a shorter genome to fix some properties
+    if len(genome) >= 36: 
+        use_product = genome[35] == 1
+    else:
+        use_product = True
+    #Build message for training 
+    msg ={'train_month':list(train_month),
+          'eval_month':test_month,
+          'input_columns':input_columns,
+          'use_product':use_product,
+          'use_change':use_change,
+        
+    }
+    if verbose:
+        print(msg)
+    ret = naive_bayes_workflow(msg)
+    #Print and save to file 
+    text = '\t'.join([str(a) for a in ret[0]]) + '\t'
+    text += '%s\t%s\t' % ( use_change, use_product)
+    if verbose:
+        print(text)
+    text += "','".join(input_columns)
+    text += "\t" + ",".join([str(a) for a in train_month])
+    text += '\n'
+    with open(dataset_root+'logs/%s.log' % filename, 'a') as f:
+        f.write(text)
+        
+    return ret[0]
+
+#cell 32
+#Define evaluation function
+def eval_function_4(individual):
+    """
+    Tries to optimize just the training score
+    """
+    ret = get_genomic_score([5,16],'genetic_search_10',individual,verbose=False)
+    return [np.sum(ret)/2]
+
+
+#cell 35
+## Submission
+
+#cell 36
+## I have to create a submission function, I will reuse the one from the previous notebook.
+
 
 if __name__ == "__main__":
 	print get_dict_type_w_lag()
