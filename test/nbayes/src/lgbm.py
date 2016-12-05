@@ -1,5 +1,5 @@
+#light GBM workflow
 import numpy as np
-from sklearn.naive_bayes import BernoulliNB
 import time
 import gzip
 import warnings
@@ -41,16 +41,12 @@ def train_lgbm_model(msg):
     clf = lgb.LGBMClassifier(n_estimators=100, nthread = 6) # specify nthread = 8 to speed up 
     print "training data size, ", input_data.shape, " training target size, ", output_data.shape
     #print "Column_6 unique vals: ", len(np.unique(input_data[:,6]))
-    #print "Column_9 unique vals: ", len(np.unique(input_data[:,9]))
-    #print "Column_20 unique vals: ", len(np.unique(input_data[:,20]))
-    #print "Column_26 unique vals: ", len(np.unique(input_data[:,26]))
     clf.fit(input_data, output_data, eval_metric="multi_logloss")
     if saving_path is not None:
         clf.save_model(saving_path)
         
     return clf, unq_lb
 
-#cell 8
 def create_prediction(clf, msg, unq_lb):
     """
     Makes a prediction using the given model and parameters
@@ -85,7 +81,6 @@ def create_prediction(clf, msg, unq_lb):
     predictions = predictions[:,::-1][:,0:7]
     return predictions, output_data
 
-#cell 9
 def prediction_workflow(msg):
     """
     Implements all the steps of training and evaluating a naive bayes classifier
@@ -116,9 +111,6 @@ def prediction_workflow(msg):
     
     return scores, clf, unq_lb
 
-
-
-#cell 37
 def create_submission(filename, msg, 
                         verbose=False):
     """
@@ -166,7 +158,6 @@ def get_msg(model_path = None):
     user specified 
     define input features, months, interactions and conditions here
     """
-
     #####0. define base ########
     msg = {
     #'train_month': [1,2,5,6,10,11,16],
@@ -184,8 +175,7 @@ def get_msg(model_path = None):
     'use_profile_change_lags': [], # lags for which we use profile change features
     'input_columns_change': [], # profile features for which we collect change info
     'use_gbdt_feature': False,
-    'model_path':None
-    }
+    'model_path':None }
     if model_path is not None :
         msg.update({'model_path': model_path})
     ######1. define interactions ########
@@ -203,7 +193,7 @@ def get_msg(model_path = None):
 
 if __name__ == "__main__":
     submission_file_name = 'lgbm_1204_02'
-    msg = get_msg()
+    msg = get_msg(model_path = )
     start_time = time.time()
     print(create_submission(submission_file_name,msg))
     print(time.time()-start_time)
