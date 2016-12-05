@@ -193,7 +193,7 @@ def get_msg(model_path = None):
 
 if __name__ == "__main__":
     submission_file_name = 'lgbm_1204_02'
-    msg = get_msg(model_path = )
+    msg = get_msg(model_path = '../saved_model/model_name.txt')
     start_time = time.time()
     print(create_submission(submission_file_name,msg))
     print(time.time()-start_time)
