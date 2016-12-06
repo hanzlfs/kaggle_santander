@@ -8,3 +8,8 @@ output/*.csv
 valid/*.pyc
 kaggle_kernels/*.pyc
 
+
+code/data_process/*.pyc
+code/main/.*pyc
+code/valid/*.pyc
+code/workflow/*.pyc
