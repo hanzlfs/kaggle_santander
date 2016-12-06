@@ -312,7 +312,7 @@ class SantanderDataset(object):
                 if data[i] is None:
                     data[i] = ret[i]
                 else:
-                    print "data[i], ", data[i].shape, " ret[i], ", ret[i].shape
+                    #print "data[i], ", data[i].shape, " ret[i], ", ret[i].shape
                     data[i] = np.concatenate((data[i], ret[i]), axis=0)
         return data
 
@@ -455,4 +455,48 @@ class SantanderDataset(object):
             previous_products = df_previous[self.product_columns].values
 
         return input_data, output_data, previous_products
+
+    def __get_train_val_test_data_aux(self, msg, istrain, months):
+        """
+        Private methods that takes msg and request, return input data, output data and previous_products, if any
+
+        """
+        msg_copy = msg.copy()
+        msg_copy['train'] = istrain 
+        msg_copy['month'] = months
+        ret = self.get_data(msg_copy)
+        return ret
+
+    def get_train_val_test_data(self, msg):
+        """
+        Get train and val and test data
+
+        train data contains months in msg['train_month'] 
+        val data contains months in msg['eval_month'] 
+        test data contains month 17 (2016-06-28) 
+        """
+        start_time = time.time()
+        print("Read train data")
+        ret = self.__get_train_val_test_data_aux(msg, istrain = True, \
+                months = [x for x in msg['train_month'] if x not in msg['eval_month']])
+        self.train_data_tr, self.train_label_tr = ret[0:2]
+        
+        print("Read validation part of train data, for production use both train and val for test")
+        ret = self.__get_train_val_test_data_aux(msg, istrain = True, \
+                months = [x for x in msg['train_month'] if x in msg['eval_month']])
+        self.train_data_val, self.train_label_val = ret[0:2]
+
+        print("Read val data")
+        ret = self.__get_train_val_test_data_aux(msg, istrain = False, \
+                months = msg['eval_month'])
+        self.val_data, self.val_label, self.val_prev_prod = ret
+
+        # Read test data
+        """
+        ret = self.__get_train_val_test_data_aux(msg, istrain = False, \
+                months = 17)
+        self.test_data, self.test_label, self.test_prev_prod = ret
+        """
+
+        print('It took %i seconds to process the dataset' % (time.time()-start_time))
 
