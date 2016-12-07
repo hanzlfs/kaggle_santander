@@ -1,5 +1,4 @@
 #light GBM workflow
-import pandas as pd
 import numpy as np
 import time
 import gzip
@@ -28,11 +27,11 @@ def train_model(msg, params, train_for_validation = True):
     """    
     if train_for_validation:
         # only use train month that not in eval month
-        input_data, output_data = dataset.train_data_tr, dataset.train_label_tr
+        input_data, output_data = dataset.train_data_tr, dataset.train_data_val
     else:
         # use all months in train month
-        input_data = np.concatenate((dataset.train_data_tr, dataset.train_data_val), axis = 0)
-        output_data = np.concatenate((dataset.train_label_tr, dataset.train_label_val), axis = 0)
+        input_data = np.concatenate((dataset.train_data_tr, dataset.train_data_val), axis = 1)
+        output_data = np.concatenate((dataset.train_label_tr, dataset.train_label_val), axis = 1)
     
     print "training data size, ", input_data.shape, " training target size, ", output_data.shape
     #Get unique train labels in case it is incomplete
@@ -82,7 +81,7 @@ def validation(clf, unq_lb):
     #Get the score
 
     score = mapk(output_data, predictions)
-    return score
+    print "validation map@7: ", score
 
 def create_submission(filename, clf, unq_lb):
     """
@@ -97,7 +96,7 @@ def create_submission(filename, clf, unq_lb):
     test_month = 17
     target_cols = np.array(dataset.product_columns)    
     final_preds = [" ".join(list(target_cols[pred])) for pred in predictions]
-    test_id = np.array(dataset.eval_current.loc[dataset.eval_current.fecha_dato == test_month, "ncodpers"])
+    test_id = np.array(dataset.eval_current.loc[dataset.eval_current.fecha_dato == test_month, ["ncodpers"]])
     out_df = pd.DataFrame({'ncodpers':test_id, 'added_products':final_preds})
     out_df = out_df[["ncodpers","added_products"]]
     out_df.to_csv(dataset_root + 'submissions/' + filename + '.csv', index=False)
@@ -112,14 +111,13 @@ def workflow(msg, params, isTest = True):
     # Validation
     # train model with train months except eval months
     clf, unq_lb = train_model(msg, params, train_for_validation = True)
-    score = validation(clf, unq_lb)
+    validation(clf, unq_lb)
 
     # submission
     if isTest:
         # train the model with all train months
         clf, unq_lb = train_model(msg, params, train_for_validation = False)
         create_submission(msg['filename'], clf, unq_lb)
-    print "validation map@7 = ", score
 
 def get_msg(filename = None, model_path = None):
     """
@@ -129,24 +127,23 @@ def get_msg(filename = None, model_path = None):
     filename: submission file name
     model_path: 
     """
+
     ##### define base ########
     msg = {
-        'train_month': [1,2,5,6,10,11,16],
-        'eval_month': [5, 16],
-        #'train_month': [5, 16],
-        #'eval_month': [16],
+        #'train_month': [1,2,5,6,10,11,16],
+        #'eval_month': [5, 16],
+        'train_month': [5, 16],
+        'eval_month': [16],
         'input_columns': ['renta', 'pais_residencia','age','indrel','indrel_1mes','indext','segmento','month'], # the input columns not lag
         'use_product': True,
         'use_change': True,
         'use_product_lags': [2,3,4,5],
         'use_profile_lags': [1,2,3,4,5],
         'input_columns_lags': ['indrel', 'indext', 'indrel_1mes', 'segmento'], # profile features for which we include in lags as well
-        #'use_product_lags': None,
-        #'use_profile_lags': None,
-        #'input_columns_lags': None, 
-        'use_product_change_lags': [2,3,4], # lags for which we use product change features
-        'use_profile_change_lags': [0,1,2,3,4], # lags for which we use profile change features
-        'input_columns_change': ['indrel', 'indext', 'indrel_1mes', 'segmento'], # profile features for which we collect change info
+        'input_columns_interactions': [], # groups of interactions we include in training
+        'use_product_change_lags': [], # lags for which we use product change features
+        'use_profile_change_lags': [], # lags for which we use profile change features
+        'input_columns_change': [], # profile features for which we collect change info
         'use_gbdt_feature': False
     }
 
@@ -159,20 +156,17 @@ def get_msg(filename = None, model_path = None):
         msg.update({'filename': filename})
 
     ###### define interactions ########
-    profile_feature = ['indrel','indrel_1mes','indext', 'segmento']
+    profile_feature = ['renta', 'age', 'indrel','indrel_1mes','indext', 'segmento']
     is_prod_feature = False
     profile_lag = [0]
     prod_lag = [1]
-    interact_order = 4
+    interact_order = 2
     interact_option = 'individual'
-    
     msg['input_columns_interactions'] = create_interaction_list(profile_feature = profile_feature, \
                                             is_prod_feature = is_prod_feature, \
                                             profile_lag = profile_lag, prod_lag = prod_lag, \
                                             interact_order = interact_order, interact_option = interact_option)
     
-    #msg['input_columns_interactions'] = None
-
     return msg
 
 def get_param():
@@ -186,23 +180,13 @@ def get_param():
     return params
 
 if __name__ == "__main__":
-    
-    msg = get_msg(filename = 'lgbm-1206-02-4', model_path = None)
+    msg = get_msg(filename = 'lgbm-1205-02', model_path = 'lgbm-1205-02')
     params = get_param()
 
     start_time = time.time()
-    dataset.get_train_val_test_data(msg)      
-    workflow(msg, params, isTest = True)
-    print(msg, params)  
+    dataset.get_train_val_test_data(msg)
+    print(msg, params)    
+    workflow(msg, params, isTest = False)
     print(time.time()-start_time)
-
-    
-    """
-    # Save datasets including status change features 
-    start_time = time.time()
-    dataset.generate_dataset_with_status_change(dataset_root)
-    print(time.time()-start_time)
-    """
-
 
 
