@@ -144,7 +144,7 @@ def get_msg(filename = None, model_path = None):
         #'use_product_lags': None,
         #'use_profile_lags': None,
         #'input_columns_lags': None, 
-        'use_product_change_lags': [2,3,4], # lags for which we use product change features
+        'use_product_change_lags': [1,2,3,4], # lags for which we use product change features
         'use_profile_change_lags': [0,1,2,3,4], # lags for which we use profile change features
         'input_columns_change': ['indrel', 'indext', 'indrel_1mes', 'segmento'], # profile features for which we collect change info
         'use_gbdt_feature': False
@@ -166,6 +166,9 @@ def get_msg(filename = None, model_path = None):
     interact_order = 4
     interact_option = 'individual'
     
+    """
+    Modify create_interaction_list() if you think it could be more general or simple
+    """
     msg['input_columns_interactions'] = create_interaction_list(profile_feature = profile_feature, \
                                             is_prod_feature = is_prod_feature, \
                                             profile_lag = profile_lag, prod_lag = prod_lag, \
@@ -187,7 +190,7 @@ def get_param():
 
 if __name__ == "__main__":
     
-    msg = get_msg(filename = 'lgbm-1206-02-4', model_path = None)
+    msg = get_msg(filename = 'lgbm-1207-01', model_path = None)
     params = get_param()
 
     start_time = time.time()

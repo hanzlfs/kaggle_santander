@@ -26,17 +26,13 @@ feat_prod = ['ind_ahor_fin_ult1', 'ind_aval_fin_ult1', 'ind_cco_fin_ult1', 'ind_
 											'ind_hip_fin_ult1', 'ind_plan_fin_ult1', 'ind_pres_fin_ult1', 'ind_reca_fin_ult1', 'ind_tjcr_fin_ult1',\
 											 'ind_valo_fin_ult1', 'ind_viv_fin_ult1', 'ind_nomina_ult1', 'ind_nom_pens_ult1', 'ind_recibo_ult1']
 
-def create_sequence_list(month_current, month_set):
-	"""
-	create sequence features with month_set 
-	
-	month_current: current month 	
-	"""
-	return 0
-
 
 def create_interaction_list(profile_feature, is_prod_feature = False, profile_lag = [0], prod_lag = [1], \
 																	 interact_order = 2, interact_option = 'individual'):
+	"""
+	Modify this function if you think it could be more general or simple
+
+	"""
 	"""
 	create interaction groups given experiment conditions
 
