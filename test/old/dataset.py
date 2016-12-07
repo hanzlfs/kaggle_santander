@@ -243,21 +243,24 @@ class SantanderDataset(object):
 
         Note: this function must be applied after digitalized categorical features and before one-hot encoding
         """
-        status_change_data = None
-        for lag in lags:
-            print lag
-            if lag == 0:
-                col_current = feature_columns
-            else:
-                col_current = [x + '_L' + str(lag) for x in feature_columns]
-            col_prev = [x + '_L' + str(lag + 1) for x in feature_columns]
-            if status_change_data is None:
-                # This actually defines the OPPOSITE to change! I tried switch to np.not_equal... but it seems np.equal gives higher LB, very interesting
-                status_change_data = np.equal(df[col_current].values.astype(int), df[col_prev].values.astype(int)).astype(int)
-            else:
-                status_change_data = np.concatenate((status_change_data, \
-                    np.equal(df[col_current].values.astype(int), df[col_prev].values.astype(int)).astype(int)), axis = 1)
-                
+        feat_names = [col + '_change_L' + str(lag) for col in feature_columns for lag in lags]
+        for col in feature_columns:
+            for lag in lags:
+                # determine current and previous columns
+                if lag == 0:
+                    col_current = col
+                else:
+                    col_current = col + '_L' + str(lag)
+
+                # comparison
+                if lag < max_lag:
+                    col_prev = col + '_L' + str(lag + 1)
+                    df[col + '_change_L' + str(lag)] = df.apply(lambda row: int(int(row[col_current]) == int(row[col_prev])),\
+                                                            axis = 1)                
+                else:
+                    df[col + '_change_L' + str(lag)] = 0
+        
+        status_change_data = df[feat_names].values
         return status_change_data
 
     def __get_product_status_change_data(self, df, lags):
@@ -270,28 +273,28 @@ class SantanderDataset(object):
         prod_change 1/0, prod_add 1/0 prod_drop 1/0 prod_maintain 1/0
         """
 
-        status_change_data = None
-        for lag in lags:
-            if lag == 0:
-                continue
-            col_current = [x + '_L' + str(lag) for x in self.product_columns]
-            col_prev = [x + '_L' + str(lag + 1) for x in self.product_columns]  
-            if status_change_data is None:
-                # This defines the OPPOSITE to change! I tried switch to np.not_equal... but it seems np.equal gives higher LB, very interesting
-                status_change_data = np.equal(df[col_current].values.astype(int), df[col_prev].values.astype(int)).astype(int)
-                status_change_data = np.concatenate((status_change_data, \
-                    np.greater(df[col_current].values.astype(int), df[col_prev].values.astype(int)).astype(int)), axis = 1)
-                status_change_data = np.concatenate((status_change_data, \
-                    np.greater(df[col_prev].values.astype(int), df[col_current].values.astype(int)).astype(int)), axis = 1)
-            else:
-                status_change_data = np.concatenate((status_change_data, \
-                    np.equal(df[col_current].values.astype(int), df[col_prev].values.astype(int)).astype(int)), axis = 1) # change
-                status_change_data = np.concatenate((status_change_data, \
-                    np.greater(df[col_current].values.astype(int), df[col_prev].values.astype(int)).astype(int)), axis = 1) # add 
-                status_change_data = np.concatenate((status_change_data, \
-                    np.greater(df[col_prev].values.astype(int), df[col_current].values.astype(int)).astype(int)), axis = 1) # drop
+        # find out previous column names
+        feat_names = [col + x + str(lag) for col in self.product_columns \
+                        for x in ['_change_L','_add_L','_drop_L'] for lag in lags]
+        for col in self.product_columns:
+            for lag in lags:
+                if lag == 0:
+                    continue # we assume have no information on current month products
+                if lag < max_lag:
+                    col_current = col + '_L' + str(lag) 
+                    col_prev = col + '_L' + str(lag + 1)
 
+                    df[col + '_change_L' + str(lag)] = df.apply(lambda row: int(int(row[col_current]) == int(row[col_prev])), axis = 1)
+                    df[col + '_add_L' + str(lag)] = df.apply(lambda row: int(int(row[col_current]) == int(row[col_prev]) + 1), axis = 1)
+                    df[col + '_drop_L' + str(lag)] = df.apply(lambda row: int(int(row[col_current]) + 1 == int(row[col_prev])), axis = 1)
+                else:
+                    df[col + '_change_L' + str(lag)] = 0
+                    df[col + '_add_L' + str(lag)] = 0
+                    df[col + '_drop_L' + str(lag)] = 0
+
+        status_change_data = df[feat_names].values
         return status_change_data
+
 
     def __get_data_aux(self, msg):
         """
@@ -301,7 +304,6 @@ class SantanderDataset(object):
         #Loop over the required months
         data = [None, None, None]
         for month in msg['month']:
-            print "collecting month ... ... ", month
             msg_copy = msg.copy()
             msg_copy['month'] = month
             ret = self.get_data(msg_copy)
@@ -381,7 +383,6 @@ class SantanderDataset(object):
                                             axis=1)
         #Add interaction data if necessary
         if msg['input_columns_interactions']:
-            print "processing feature interactions ...... "
             interact_data = self.__get_interact_data(df_current, msg['input_columns_interactions'])
 
             if input_data is None:
@@ -475,31 +476,27 @@ class SantanderDataset(object):
         test data contains month 17 (2016-06-28) 
         """
         start_time = time.time()
-
         print("Read train data")
         ret = self.__get_train_val_test_data_aux(msg, istrain = True, \
                 months = [x for x in msg['train_month'] if x not in msg['eval_month']])
         self.train_data_tr, self.train_label_tr = ret[0:2]
-        print "train data size, ", self.train_data_tr.shape, self.train_label_tr.shape
-
+        
         print("Read validation part of train data, for production use both train and val for test")
         ret = self.__get_train_val_test_data_aux(msg, istrain = True, \
                 months = [x for x in msg['train_month'] if x in msg['eval_month']])
         self.train_data_val, self.train_label_val = ret[0:2]
-        print "train data size, ", self.train_data_val.shape, self.train_label_val.shape
 
         print("Read val data")
         ret = self.__get_train_val_test_data_aux(msg, istrain = False, \
                 months = msg['eval_month'])
         self.val_data, self.val_label, self.val_prev_prod = ret
-        print "val data size, ", self.val_data.shape
 
-        print("Read test data")
+        # Read test data
+        """
         ret = self.__get_train_val_test_data_aux(msg, istrain = False, \
                 months = 17)
         self.test_data, self.test_label, self.test_prev_prod = ret
-        print "test data size, ", self.test_data.shape
-        
+        """
 
         print('It took %i seconds to process the dataset' % (time.time()-start_time))
 
