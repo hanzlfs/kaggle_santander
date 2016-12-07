@@ -1,8 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Definition of the class dataset for handling the Santander competition dataset
-"""
-
 import numpy as np
 import pandas as pd
 import time
@@ -237,6 +232,7 @@ class SantanderDataset(object):
         Private method that generate all sequence features and one-hot. The procedure should be similar to __get_interact_data() 
 
         df: pandas dataframe
+        feature_seqs : dict(), key : feature name, value : sequence 
         feature_seqs: dict(), feature_seqs[feature_name] = [[lag group 1], [lag group 2], ... ]
             for example, feature_seqs[renta] = [[0,2,4],[3,5,9]] means we want to include features "renta-renta_L2-renta_L4" 
             and "renta_L3-renta_L5-renta_L9". The feature values are first combined using '-' and then one-hotted, similar to 
@@ -244,6 +240,14 @@ class SantanderDataset(object):
 
         return: sequence_data numpy.array with shape[df.shape[0], number of added sequence features after one-hot]
         """
+        feat_seqs_name = []
+        for name, seqs in feature_seqs.iteritems():
+            seqs_name_tmp = map(lambda x : name + "_L" +str(x) if x > 0 else "", seqs) # map [0, 2, 4] -> [renta_L0, renta_L2, renta_L4]
+            seqs_name = filter(lambda x : x != "", seqs_name_tmp) # filter out renta_L0
+            feat_seqs_name.append("-".join(seqs_name))
+
+        df[feat_seqs_name]
+
         return 0
 
 
