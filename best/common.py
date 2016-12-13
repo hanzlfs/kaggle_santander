@@ -6,7 +6,7 @@ import itertools
 """
 max number of lags
 """
-max_lag = 5
+max_lag = 11
 
 """
 Define different feature groups
@@ -104,7 +104,12 @@ def get_feat_prod_lag(lags):
 	# get lag product features with selected lags 
 	feat = []
 	for lag in lags:
-		feat.extend([str(x) + '_L' + str(lag) for x in feat_prod])
+		if type(lag) is list:
+			# [1,3] means taking the bitwise OR of 1,3 to form a combined class
+			feat.extend([[str(x) + '_L' + str(l) for l in lag] for x in feat_prod])
+		else:
+			# individual class
+			feat.extend([str(x) + '_L' + str(lag) for x in feat_prod])
 	return feat
 
 def get_feat_lag(features, lags):
@@ -127,10 +132,18 @@ def get_feat_prod_change(lags):
 
 def isInt(value):
 	try:
-		int(value)
+		int(float(value))
 		return True
 	except ValueError:
 		return False
+
+def convert_to_int(val):
+	if val is None:
+		return None
+	if isInt(val):
+		val = int(float(val))
+	val = str(val).strip()
+	return val
 
 """
 Basic dic type
@@ -209,7 +222,7 @@ dictionary_types = {
 		"ind_nomina_ult1_change":'category',
 		"ind_nom_pens_ult1_change":'category',
 		"ind_recibo_ult1_change":'category',
-		'product_buy':np.int8,
+		'product_buy':'category'
 }
 
 def get_dict_type_w_lag():

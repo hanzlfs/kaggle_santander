@@ -18,7 +18,7 @@ from sklearn import datasets, metrics, model_selection
 from common import *
 
 dataset_root = '../'
-dataset = SantanderDataset(dataset_root, isLag = True, lags = [1,2,3,4,5])
+dataset = SantanderDataset(dataset_root, isLag = True, lags = range(1, 12))
 
 
 def train_model(msg, params, train_for_validation = True):
@@ -81,6 +81,8 @@ def validation(clf, unq_lb):
                                     dataset.p_val, unq_lb)
     output_data = dataset.y_val
     #Get the score
+    print output_data.shape
+    print output_data[0:10]
 
     score = mapk(output_data, predictions)
     return score
@@ -114,15 +116,28 @@ def workflow(msg, params, isTest = True):
     # train model with train months except eval months
     clf, unq_lb = train_model(msg, params, train_for_validation = True)
     score = validation(clf, unq_lb)
-
+    
     # submission
     if isTest:
         # train the model with all train months
-        clf, unq_lb = train_model(msg, params, train_for_validation = False)
+        clf, unq_lb = train_model(msg, params, train_for_validation = False)        
         create_submission(msg['filename'], clf, unq_lb)
     print "validation map@7 = ", score
+    print('Calculate feature importances...')
+        # feature importances
+    print('Feature importances:', list(clf.feature_importance()))
 
-def get_msg(filename = None, model_path = None):
+    #### Write feature importance to file #####
+
+    feature_names = pd.DataFrame({'position': range(0, len(dataset.feature_names)),\
+                                    'feature_name': dataset.feature_names, \
+                                    'fi': list(clf.feature_importance())}) 
+
+    feature_names = feature_names.sort_values(['fi'], ascending = [False])
+    feature_names.to_csv('../input/'+ msg['file_fi'] + '.csv', header = True, index = False)
+    
+
+def get_msg(filename = None, file_fi = None, model_path = None):
     """
     user specified 
     define input features, months, interactions and conditions here
@@ -133,16 +148,16 @@ def get_msg(filename = None, model_path = None):
     ##### define base ########
     msg = {
         'train_month': [1,2,5,6,10,11,16], 
-        'eval_month': None, # We dropped the old evaluation procedure 
-        'input_columns': ['renta', 'pais_residencia','age','indrel','indrel_1mes','indext','segmento','month'], # the input columns not lag
+        'eval_month': None, 
+        'input_columns': ['renta','age','indrel','indrel_1mes','indext','segmento','month'], 
         'use_product': True,
         'use_change': True,
-        'use_product_lags': [2,3,4,5],
-        'use_profile_lags': [1,2,3,4,5],
-        'input_columns_lags': ['indrel', 'indext', 'indrel_1mes', 'segmento'], # profile features for which we include in lags as well
-        'use_product_change_lags': [2,3,4], # lags for which we use product change features
-        'use_profile_change_lags': [0,1,2,3,4], # lags for which we use profile change features
-        'input_columns_change': ['indrel', 'indext', 'indrel_1mes', 'segmento'], # profile features for which we collect change info
+        'use_product_lags': [2,3,4,5,6,7,8,9,10,11],
+        'use_profile_lags': [1,2,3,4,5,6,7,8,9,10],
+        'input_columns_lags': ['indrel', 'indext', 'indrel_1mes', 'segmento'], 
+        'use_product_change_lags': {'lags':[2,3,4,5,6,7,8,9,10,11], 'use':'month-based'}, 
+        'use_profile_change_lags': [0,1,2,3,4], 
+        'input_columns_change': ['indrel', 'indext', 'indrel_1mes', 'segmento'], 
         'use_gbdt_feature': False
     }
 
@@ -153,6 +168,10 @@ def get_msg(filename = None, model_path = None):
     ##### path to write submission files ####
     if filename is not None:
         msg.update({'filename': filename})
+
+    #### csv file to keep feature name and feature importance####
+    if file_fi is not None:
+        msg.update({'file_fi': file_fi})
 
     ###### define interactions ########
     msg['input_columns_interactions'] = [['indrel','indrel_1mes','indext', 'segmento']]
@@ -178,7 +197,7 @@ def get_param():
 
 if __name__ == "__main__":
     
-    msg = get_msg(filename = 'lgbm-1210-01-olddata', model_path = None)
+    msg = get_msg(filename = 'lgbm-1212-04', file_fi = 'lgbmFI-1212-04', model_path = None)
     params = get_param()
 
     start_time = time.time()
