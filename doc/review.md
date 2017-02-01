@@ -23,23 +23,23 @@ The data were collected directly from customer behavior instead of sampling for 
 
 #### Methodology
 
-The methodology is a pipeline that includes EDA, feature engineer, cross validation, variable selection and parameter tuning. I borrowed existing ideas from popular problems like CTR, and tailored the approaches particularly for this data as well. I will briefly describe major steps.
+The methodology is a pipeline that includes EDA, feature engineer, cross validation, variable selection and parameter tuning. We borrowed existing ideas from popular problems like CTR, and tailored the approaches particularly for this data as well. We will briefly describe major steps.
 
 - **EDA and Feature Selection**
 
-Basically I analyzed (1) the distribution of each feature and (2) how differently each feature was distributed, across different target labels. For example, among customers that have purchased products 1 to 24 respectively, I generated the distribution of age, family income, activity indices, etc. A feature is considered important if its distribution shows significantly different patterns among 24 groups.  
+Basically We analyzed (1) the distribution of each feature and (2) how differently each feature was distributed, across different target labels. For example, among customers that have purchased products 1 to 24 respectively, We generated the distribution of age, family income, activity indices, etc. A feature is considered important if its distribution shows significantly different patterns among 24 groups.  
 For example this image displays the EDA (2) for feature ind_empleado which turned out to be very effective in prediction power.
 ![ind_empleado_EDA](./ind_empleado.png "EDA on feature ind_empleado_EDA")
 
 - **Feature Engineer**
 
-I engineered features from low to high levels. 
+We engineered features from low to high levels. 
 
 - 0 Preprocessing
-I binned numerical features into categorical ones based on their distributions, and merged minority levels of categorical features according to distribution similarity through EDA. This is useful especially when there are too many levels in a categorical feature, such as city/province. 
+We binned numerical features into categorical ones based on their distributions, and merged minority levels of categorical features according to distribution similarity through EDA. This is useful especially when there are too many levels in a categorical feature, such as city/province. 
 
 - 1 Lag Features
-An important factor in the data is time dependency; therefore we added the lag features, i.e. the purchase history and activity indices of previous 11 months (as 12 is the period of one-year season.)
+An important factor in the data is time dependency; therefore we added the lag features, We.e. the purchase history and activity indices of previous 11 months (as 12 is the period of one-year season.)
 
 - 2 Status Change Features
 Whether product was added, dropped, or maintained, and whether customer activity index has changed throughout past months.
