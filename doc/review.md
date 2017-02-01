@@ -81,3 +81,12 @@ We trained a softmax classifier on top of predictions from different models (FFM
 - Variable Selection
 
 We use feature importance output from LightGBM as a direction to trim out unimportant features, and use EDA and cross-validation to replace them with more important features. 
+
+- The overall diagram for our methodology is as follows
+
+![Diagram](./diagram.png "diagram")
+
+
+
+
+
