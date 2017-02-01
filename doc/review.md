@@ -10,6 +10,7 @@ There are two datasets, train and test, with 13,647,309 and 929,615 lines respec
 After processing the data and a series of feature engineering, we have used ~ 1500 features to produce the best prediction results. 
 
 #### Preprocessing and Cleaning
+
 There are several practical concerns in dealing with the data. The training data was collected at the same day of each month from 2015-01-28 to 2016-05-28. The test data has customer features except product buying for 2016-06-28, and the target was to predict additional product buying for this month in addition to 2016-05-28. The evaluation metric is MAP@7. 
 
 - **1 Incorrect/Missing Values**
@@ -36,36 +37,47 @@ For example this image displays the EDA (2) for feature ind_empleado which turne
 We engineered features from low to high levels. 
 
 - 0 Preprocessing
+
 We binned numerical features into categorical ones based on their distributions, and merged minority levels of categorical features according to distribution similarity through EDA. This is useful especially when there are too many levels in a categorical feature, such as city/province. 
 
 - 1 Lag Features
+
 An important factor in the data is time dependency; therefore we added the lag features, We.e. the purchase history and activity indices of previous 11 months (as 12 is the period of one-year season.)
 
 - 2 Status Change Features
+
 Whether product was added, dropped, or maintained, and whether customer activity index has changed throughout past months.
 
 - 3 Interaction
+
 We created combined features by both tensor product and inner product among important features.
 
 - 4 Sequence
+
 We created sequence features, such as the combined product purchase value in selected past months, (1, 6), (2, 7) … to capture seasonality
 
 - 5 Nearest Neighbor (NN) Features
+
 We select nearest neighbors of each customer based on similarity and summarize their features to create NN features. 
 
 - 6 Boosting Tree Hashing
+
 We use the leaf indices of trained gbdt and xgboost models to encode existing features. 
 
 - **Model**
 
 - 1 Field-aware Factorization Machines (FFM) 
+
 We found out the similarity between this problem and CTR prediction, considering buying a product as clicking on an ad. Therefore we adopted FFM as our first model.
 
 - 2 LightGBM
+
 Instead of a recommender system problem as the contest title suggested, we figured this is more of a predictive modeling problem. Therefore we chose the LightGBM model. 
 
 - 3 Blending
+
 We trained a softmax classifier on top of predictions from different models (FFM and LightGBM with different parameters and/or on different feature groups). 
 
 - Variable Selection
+
 We use feature importance output from LightGBM as a direction to trim out unimportant features, and use EDA and cross-validation to replace them with more important features. 
